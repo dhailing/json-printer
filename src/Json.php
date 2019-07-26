@@ -16,44 +16,47 @@ class Json
 {
     protected $array;
 
-    protected $rejosn = '';
+    protected $josn = '';
 
     public function __construct($data)
     {
-        if(!is_array($data)) {
-            throw new InvalidArgumentException('The instantiated arguments should be arrays');
+        if(is_string($data)) {
+            $this->array = json_decode($data, true);
+        } elseif(is_array($data)) {
+            $this->array = $data;
+        } else {
+            throw new InvalidArgumentException('The input parameter is given an array or json string');
         }
-
-        $this->array = $data;
-
-        array_walk_recursive($this->array, '_format_protect');
-
-        $this->array = $this->_encode();
-        $this->array = $this->_url_encode();
     }
 
-    public function _format_protect(&$val)
+    private function _format_protect(&$val)
     {
         if ($val !== true && $val !== false && $val !== null) {
             $val = urlencode($val);
         }
     }
 
-    public function _encode()
+    private function _encode()
     {
-        return json_encode($this->array);
+        $this->josn = json_encode($this->array);
+        return $this->josn;
     }
 
-    public function _url_encode()
+    private function _url_decode()
     {
-        return urlencode($this->array);
+        $this->josn = urldecode($this->josn);
+        return  $this->josn;
     }
 
     public function jsonFormat()
     {
+        array_walk_recursive($this->array, [$this, '_format_protect']);
+        $this->_encode();
+        $this->_url_decode();
+
         $ret = '';
         $pos = 0;
-        $length = strlen($this->array);
+        $length = strlen($this->josn);
         $indent = isset($indent) ? $indent : '    ';
         $newline = "\n";
         $prevchar = '';
@@ -61,7 +64,7 @@ class Json
 
         for ($i = 0; $i <= $length; $i++) {
 
-            $char = substr($this->array, $i, 1);
+            $char = substr($this->josn, $i, 1);
 
             if ($char == '"' && $prevchar != '\\') {
                 $outofquotes = !$outofquotes;
@@ -89,8 +92,6 @@ class Json
             $prevchar = $char;
         }
 
-        $this->rejosn = $ret;
-
-        return $this->rejosn;
+        return $ret;
     }
 }
